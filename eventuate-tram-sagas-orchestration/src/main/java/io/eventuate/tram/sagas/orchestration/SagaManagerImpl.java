@@ -169,9 +169,17 @@ public class SagaManagerImpl<Data>
     String sagaId = message.getRequiredHeader(SagaReplyHeaders.REPLY_SAGA_ID);
     String sagaType = message.getRequiredHeader(SagaReplyHeaders.REPLY_SAGA_TYPE);
 
+    SagaInstance sagaInstanceLxm = sagaInstanceRepository.find(sagaType, sagaId);
+    String currentStateLxm = sagaInstanceLxm.getStateName();
+
+    logger.info("Current state={}", currentStateLxm);
+
+    if (currentStateLxm.contains("2") && message.getHeader("commandreply_type").get().contains("ConfirmCreateTicket")) {
+      logger.info("state is wrong");
+    }
+
     SagaInstance sagaInstance = sagaInstanceRepository.find(sagaType, sagaId);
     Data sagaData = SagaDataSerde.deserializeSagaData(sagaInstance.getSerializedSagaData());
-
 
     message.getHeader(SagaReplyHeaders.REPLY_LOCKED).ifPresent(lockedTarget -> {
       String destination = message.getRequiredHeader(CommandMessageHeaders.inReply(CommandMessageHeaders.DESTINATION));
@@ -181,6 +189,10 @@ public class SagaManagerImpl<Data>
     String currentState = sagaInstance.getStateName();
 
     logger.info("Current state={}", currentState);
+
+    if (currentState.contains("2") && message.getHeader("commandreply_type").get().contains("ConfirmCreateTicket")) {
+      logger.info("state is wrong");
+    }
 
     SagaActions<Data> actions = getStateDefinition().handleReply(currentState, sagaData, message);
 
